@@ -7,8 +7,9 @@
 let settings = {
   appsScriptUrl: '',
   token: '',
-  openaiApiKey: '',
-  openaiModel: 'gpt-3.5-turbo',
+  aiProvider: 'groq',
+  aiModel: 'llama3-8b',
+  aiKey: '',
   aiRerank: false,
   aiAutoTag: false,
   aiFollowUp: false,
@@ -72,8 +73,9 @@ function initializeElements() {
   // Settings elements
   elements.appsScriptUrlField = document.getElementById('appsScriptUrlField');
   elements.tokenField = document.getElementById('tokenField');
-  elements.openaiApiKeyField = document.getElementById('openaiApiKeyField');
-  elements.openaiModelField = document.getElementById('openaiModelField');
+  elements.aiProviderField = document.getElementById('aiProviderField');
+  elements.aiModelField = document.getElementById('aiModelField');
+  elements.aiKeyField = document.getElementById('aiKeyField');
   elements.aiRerankToggle = document.getElementById('aiRerankToggle');
   elements.aiAutoTagToggle = document.getElementById('aiAutoTagToggle');
   elements.aiFollowUpToggle = document.getElementById('aiFollowUpToggle');
@@ -127,6 +129,9 @@ function setupEventListeners() {
   // More menu
   elements.moreBtn.addEventListener('click', toggleMoreMenu);
   elements.exportCsvBtn.addEventListener('click', exportCsv);
+
+  // Provider change handler
+  elements.aiProviderField.addEventListener('change', handleProviderChange);
 
   // Keyboard shortcuts
   document.addEventListener('keydown', handleKeyboard);
@@ -234,7 +239,7 @@ async function rankAndShowRoles(roles, keyword) {
     if (settings.aiRerank && !settings.demoAI) {
       showStatus('Analyzing roles with AI...', 'info');
       try {
-        rankedRoles = await reRankWithOpenAI(heuristicRoles, keyword, settings.openaiModel, settings.openaiApiKey);
+        rankedRoles = await reRankWithLLM(heuristicRoles, keyword, settings);
       } catch (error) {
         console.warn('AI re-ranking failed, using heuristic:', error);
         showStatus('AI unavailable — using fallback', 'info');
@@ -277,50 +282,56 @@ function scoreRoleHeuristic(role, keyword) {
   return score;
 }
 
-async function reRankWithOpenAI(roles, keyword, model, apiKey, timeoutMs = 12000) {
-  if (!apiKey) throw new Error('No API key provided');
+function getAiEndpointAndHeaders({ aiProvider, aiKey }) {
+  if (aiProvider === 'groq') {
+    return {
+      url: 'https://api.groq.com/openai/v1/chat/completions',
+      headers: { 'Authorization': `Bearer ${aiKey}`, 'Content-Type': 'application/json' }
+    };
+  }
+  if (aiProvider === 'openai') {
+    return {
+      url: 'https://api.openai.com/v1/chat/completions',
+      headers: { 'Authorization': `Bearer ${aiKey}`, 'Content-Type': 'application/json' }
+    };
+  }
+  if (aiProvider === 'openrouter') {
+    return {
+      url: 'https://openrouter.ai/api/v1/chat/completions',
+      headers: { 'Authorization': `Bearer ${aiKey}`, 'Content-Type': 'application/json' }
+    };
+  }
+  throw new Error('Unknown AI provider');
+}
+
+async function reRankWithLLM(roles, keyword, settings, timeoutMs = 12000) {
+  if (!settings.aiKey) throw new Error('No API key provided');
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const roleSummaries = roles.map((role, index) => ({
-      index,
-      summary: `${role.title} at ${role.company || 'Unknown'} (${role.isCurrent ? 'Current' : 'Previous'})${role.desc ? ` - ${role.desc.substring(0, 100)}` : ''}`
-    }));
+    const { url, headers } = getAiEndpointAndHeaders({ aiProvider: settings.aiProvider, aiKey: settings.aiKey });
+    const model = settings.aiModel || (settings.aiProvider === 'groq' ? 'llama3-8b' : 'gpt-3.5-turbo');
 
-    const prompt = `Analyze these professional roles and rank them by relevance to the keyword "${keyword || 'general professional networking'}".
+    const body = {
+      model,
+      temperature: 0,
+      messages: [
+        { role: 'system', content: 'Rank roles vs keyword. Return JSON array of {index, score:0..1, explanation}.' },
+        { role: 'user', content: `Keyword: ${keyword || ''}\n${roles.slice(0, 10).map((r, i) => `#${i}: ${r.title || ''} @ ${r.company || ''} — ${(r.desc || '').slice(0, 160)}`).join('\n')}` }
+      ]
+    };
 
-Roles to analyze:
-${roleSummaries.map((r, i) => `${i + 1}. ${r.summary}`).join('\n')}
+    // Add response_format for OpenAI, but not for Groq
+    if (settings.aiProvider === 'openai') {
+      body.response_format = { type: 'json_object' };
+    }
 
-For each role, provide:
-1. A relevance score (0.0 to 1.0)
-2. A brief explanation (1-2 sentences)
-
-Respond in JSON format:
-{
-  "rankings": [
-    {"index": 0, "score": 0.85, "explanation": "..."}, 
-    {"index": 1, "score": 0.72, "explanation": "..."}
-  ]
-}`;
-
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: 'system', content: 'You are a professional networking assistant. Analyze roles and provide relevance scores.' },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0,
-        response_format: { type: 'json_object' }
-      }),
+      headers,
+      body: JSON.stringify(body),
       signal: controller.signal
     });
 
@@ -330,12 +341,25 @@ Respond in JSON format:
       if (response.status === 429) {
         throw new Error('Too many AI requests — try again shortly');
       }
-      throw new Error(`OpenAI API error: ${response.status}`);
+      throw new Error(`${settings.aiProvider} API error: ${response.status}`);
     }
 
     const data = await response.json();
     const content = data.choices[0].message.content;
-    const rankings = JSON.parse(content).rankings;
+    
+    // Parse JSON defensively
+    let rankings;
+    try {
+      if (settings.aiProvider === 'openai') {
+        rankings = JSON.parse(content).rankings;
+      } else {
+        // For Groq and OpenRouter, parse the content directly
+        rankings = JSON.parse(content);
+      }
+    } catch (parseError) {
+      console.warn('Failed to parse AI response as JSON:', content);
+      throw new Error('Invalid AI response format');
+    }
 
     // Apply AI scores to roles
     return roles.map((role, index) => {
@@ -596,14 +620,18 @@ function loadSettings() {
 function updateSettingsUI() {
   elements.appsScriptUrlField.value = settings.appsScriptUrl;
   elements.tokenField.value = settings.token;
-  elements.openaiApiKeyField.value = settings.openaiApiKey;
-  elements.openaiModelField.value = settings.openaiModel;
+  elements.aiProviderField.value = settings.aiProvider;
+  elements.aiModelField.value = settings.aiModel;
+  elements.aiKeyField.value = settings.aiKey;
   
   updateToggle(elements.aiRerankToggle, settings.aiRerank);
   updateToggle(elements.aiAutoTagToggle, settings.aiAutoTag);
   updateToggle(elements.aiFollowUpToggle, settings.aiFollowUp);
   updateToggle(elements.demoAIToggle, settings.demoAI);
   updateToggle(elements.captureOnConnectToggle, settings.captureOnConnect);
+  
+  // Update model options based on provider
+  updateModelOptions(settings.aiProvider);
 }
 
 function updateToggle(element, isActive) {
@@ -622,8 +650,9 @@ function toggleSwitch(settingName) {
 function saveSettings() {
   settings.appsScriptUrl = elements.appsScriptUrlField.value.trim();
   settings.token = elements.tokenField.value.trim();
-  settings.openaiApiKey = elements.openaiApiKeyField.value.trim();
-  settings.openaiModel = elements.openaiModelField.value.trim() || 'gpt-3.5-turbo';
+  settings.aiProvider = elements.aiProviderField.value;
+  settings.aiModel = elements.aiModelField.value.trim() || (settings.aiProvider === 'groq' ? 'llama3-8b' : 'gpt-3.5-turbo');
+  settings.aiKey = elements.aiKeyField.value.trim();
 
   chrome.storage.sync.set(settings, () => {
     showStatus('Settings saved successfully!', 'success');
@@ -656,30 +685,68 @@ async function testAppsScript() {
 }
 
 async function testOpenAI() {
-  if (!settings.openaiApiKey) {
-    showStatus('Please enter your OpenAI API key', 'error');
+  if (!settings.aiKey) {
+    showStatus('Please enter your API key', 'error');
     return;
   }
 
   try {
-    showStatus('Testing OpenAI connection...', 'info');
+    showStatus(`Testing ${settings.aiProvider} connection...`, 'info');
     
-    const response = await fetch('https://api.openai.com/v1/models', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${settings.openaiApiKey}`
+    if (settings.aiProvider === 'groq') {
+      const success = await testGroq(settings);
+      if (success) {
+        showStatus('Groq API connection successful!', 'success');
+      } else {
+        throw new Error('Invalid response format');
       }
-    });
+    } else if (settings.aiProvider === 'openai') {
+      const response = await fetch('https://api.openai.com/v1/models', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${settings.aiKey}`
+        }
+      });
 
-    if (response.ok) {
-      showStatus('OpenAI API connection successful!', 'success');
-    } else {
-      throw new Error(`API error: ${response.status}`);
+      if (response.ok) {
+        showStatus('OpenAI API connection successful!', 'success');
+      } else {
+        throw new Error(`API error: ${response.status}`);
+      }
+    } else if (settings.aiProvider === 'openrouter') {
+      const response = await fetch('https://openrouter.ai/api/v1/models', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${settings.aiKey}`
+        }
+      });
+
+      if (response.ok) {
+        showStatus('OpenRouter API connection successful!', 'success');
+      } else {
+        throw new Error(`API error: ${response.status}`);
+      }
     }
   } catch (error) {
-    console.error('OpenAI API test error:', error);
-    showStatus(`OpenAI API test failed: ${error.message}`, 'error');
+    console.error(`${settings.aiProvider} API test error:`, error);
+    showStatus(`${settings.aiProvider} API test failed: ${error.message}`, 'error');
   }
+}
+
+async function testGroq(settings) {
+  const { url, headers } = getAiEndpointAndHeaders({ aiProvider: 'groq', aiKey: settings.aiKey });
+  const body = {
+    model: settings.aiModel || 'llama3-8b',
+    temperature: 0,
+    messages: [
+      { role: 'system', content: 'Reply with JSON {"ok":true}' },
+      { role: 'user', content: 'Ping' }
+    ]
+  };
+  const r = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
+  const j = await r.json();
+  const text = j?.choices?.[0]?.message?.content || '';
+  return /"ok"\s*:\s*true/.test(text);
 }
 
 // Session data management
@@ -772,3 +839,58 @@ document.addEventListener('click', (event) => {
     elements.moreDropdown.classList.remove('show');
   }
 });
+
+// Provider change handler
+function handleProviderChange() {
+  const provider = elements.aiProviderField.value;
+  updateModelOptions(provider);
+  
+  // Set default model for the provider
+  const defaultModel = provider === 'groq' ? 'llama3-8b' : 
+                      provider === 'openai' ? 'gpt-3.5-turbo' : 
+                      'meta-llama/llama-3-8b-instruct';
+  elements.aiModelField.value = defaultModel;
+}
+
+// Update model options based on provider
+function updateModelOptions(provider) {
+  const modelField = elements.aiModelField;
+  const currentValue = modelField.value;
+  
+  // Clear existing options
+  modelField.innerHTML = '';
+  
+  let options = [];
+  if (provider === 'groq') {
+    options = [
+      { value: 'llama3-8b', label: 'Llama 3.1 8B (Fast)' },
+      { value: 'llama3-70b', label: 'Llama 3.1 70B (Powerful)' },
+      { value: 'mixtral-8x7b', label: 'Mixtral 8x7B (Balanced)' }
+    ];
+  } else if (provider === 'openai') {
+    options = [
+      { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo (Fast)' },
+      { value: 'gpt-4o-mini', label: 'GPT-4o Mini (Balanced)' }
+    ];
+  } else if (provider === 'openrouter') {
+    options = [
+      { value: 'meta-llama/llama-3-8b-instruct', label: 'Llama 3.1 8B Instruct' },
+      { value: 'mistralai/mistral-7b-instruct', label: 'Mistral 7B Instruct' }
+    ];
+  }
+  
+  // Add options
+  options.forEach(option => {
+    const optionElement = document.createElement('option');
+    optionElement.value = option.value;
+    optionElement.textContent = option.label;
+    modelField.appendChild(optionElement);
+  });
+  
+  // Try to restore current value or set default
+  if (options.some(opt => opt.value === currentValue)) {
+    modelField.value = currentValue;
+  } else if (options.length > 0) {
+    modelField.value = options[0].value;
+  }
+}

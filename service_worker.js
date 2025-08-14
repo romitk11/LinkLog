@@ -7,8 +7,9 @@
 let settings = {
   appsScriptUrl: '',
   token: '',
-  openaiApiKey: '',
-  openaiModel: 'gpt-3.5-turbo',
+  aiProvider: 'groq',
+  aiModel: 'llama3-8b',
+  aiKey: '',
   aiRerank: false,
   aiAutoTag: false,
   aiFollowUp: false,

@@ -563,16 +563,29 @@
       </div>
 
       <div class="section">
-        <h2>OpenAI Settings</h2>
+        <h2>AI Settings</h2>
         
         <div class="field-group">
-          <label>API Key</label>
-          <input type="password" id="openaiApiKeyField" placeholder="Your OpenAI API key">
+          <label>Provider</label>
+          <select id="aiProviderField">
+            <option value="groq">Groq (Default)</option>
+            <option value="openai">OpenAI</option>
+            <option value="openrouter">OpenRouter</option>
+          </select>
         </div>
         
         <div class="field-group">
           <label>Model</label>
-          <input type="text" id="openaiModelField" value="gpt-3.5-turbo" placeholder="Model name">
+          <select id="aiModelField">
+            <option value="llama3-8b">Llama 3.1 8B (Fast)</option>
+            <option value="llama3-70b">Llama 3.1 70B (Powerful)</option>
+            <option value="mixtral-8x7b">Mixtral 8x7B (Balanced)</option>
+          </select>
+        </div>
+        
+        <div class="field-group">
+          <label>API Key</label>
+          <input type="password" id="aiKeyField" placeholder="Your API key">
         </div>
         
         <div class="toggle-group">
@@ -596,7 +609,7 @@
         </div>
         
         <div class="button-group">
-          <button id="testOpenAIBtn" class="btn btn-secondary">Test OpenAI</button>
+          <button id="testOpenAIBtn" class="btn btn-secondary">Test AI Connection</button>
         </div>
       </div>
 

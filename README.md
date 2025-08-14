@@ -164,23 +164,41 @@ if (!SpreadsheetApp.getActiveSpreadsheet()) {
 
 For the authorization token, you can use any secure string. The Apps Script will validate the Bearer token format. You can generate a simple token or use a UUID.
 
-## 🤖 OpenAI Setup
+## 🤖 AI Setup
 
-### Get an API Key
+### Groq (Default Provider)
+
+1. **Visit** [Groq Console](https://console.groq.com/keys)
+2. **Sign in** or create an account
+3. **Click "Create API Key"**
+4. **Copy the key** (it starts with `gsk_`)
+
+### OpenAI (Alternative)
 
 1. **Visit** [OpenAI Platform](https://platform.openai.com/api-keys)
 2. **Sign in** or create an account
 3. **Click "Create new secret key"**
 4. **Copy the key** (it starts with `sk-`)
 
+### OpenRouter (Alternative)
+
+1. **Visit** [OpenRouter](https://openrouter.ai/keys)
+2. **Sign in** or create an account
+3. **Create an API key**
+4. **Copy the key**
+
 ### Configure in Extension
 
 1. **Open LinkLog** extension popup
 2. **Go to Settings** tab
-3. **Paste your API key** in the "API Key" field
-4. **Choose model** (default: `gpt-3.5-turbo`)
-5. **Click "Test OpenAI"** → expect ✅
-6. **Toggle AI features** as desired:
+3. **Choose Provider**: Groq (default), OpenAI, or OpenRouter
+4. **Select Model** based on your provider:
+   - **Groq**: Llama 3.1 8B (Fast), Llama 3.1 70B (Powerful), Mixtral 8x7B (Balanced)
+   - **OpenAI**: GPT-3.5 Turbo (Fast), GPT-4o Mini (Balanced)
+   - **OpenRouter**: Llama 3.1 8B Instruct, Mistral 7B Instruct
+5. **Paste your API key** in the "API Key" field
+6. **Click "Test AI Connection"** → expect ✅
+7. **Toggle AI features** as desired:
    - "Use AI re-rank" - Re-ranks roles by relevance
    - "Use AI auto-tag" - Suggests professional tags
    - "Use AI follow-up suggestions" - Suggests optimal follow-up dates
@@ -215,9 +233,10 @@ After capturing a profile, LinkLog will show a modal with ranked roles:
 
 1. **Google Apps Script URL**: Your deployed Apps Script web app URL
 2. **Authorization Token**: The Bearer token for authentication
-3. **AI Provider**: Currently supports OpenAI (default)
-4. **AI API Key**: Your OpenAI API key (optional)
-5. **Feature Toggles**:
+3. **AI Provider**: Groq (default), OpenAI, or OpenRouter
+4. **AI Model**: Model selection based on your provider
+5. **AI API Key**: Your provider's API key (optional)
+6. **Feature Toggles**:
    - **AI Re-rank**: Use AI to re-rank roles by relevance
    - **AI Auto-tag**: Automatically suggest tags based on profile
    - **AI Follow-up**: Suggest optimal follow-up dates
@@ -292,7 +311,7 @@ LinkLog requests minimal permissions:
 - **Exponential Backoff**: Smart retry logic for network failures
 - **Local Storage**: All data stored locally until successfully posted
 - **Strict Schema**: Only 8 specified fields are written to Google Sheets
-- **AI Integration**: OpenAI API with proper error handling and fallbacks
+- **AI Integration**: Multi-provider support (Groq, OpenAI, OpenRouter) with proper error handling and fallbacks
 
 ## 🐛 Troubleshooting
 
@@ -318,8 +337,8 @@ LinkLog requests minimal permissions:
 - Try refreshing the page and capturing again
 
 ### AI Features Not Working
-- Verify OpenAI API key is correct
-- Test connection using "Test OpenAI" button
+- Verify API key is correct for your selected provider
+- Test connection using "Test AI Connection" button
 - Check for rate limiting (429 errors)
 - Try enabling "Demo/Mock AI mode" for testing
 
