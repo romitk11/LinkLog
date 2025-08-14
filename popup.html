@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LinkLog</title>
+  <style>
+    body {
+      width: 450px;
+      min-height: 600px;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f8f9fa;
+      color: #333;
+    }
+    
+    .container {
+      padding: 20px;
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #e9ecef;
+    }
+    
+    .header h1 {
+      margin: 0;
+      color: #0073b1;
+      font-size: 24px;
+      font-weight: 600;
+    }
+    
+    .section {
+      margin-bottom: 24px;
+      background: white;
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .section h2 {
+      margin: 0 0 16px 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: #495057;
+    }
+    
+    .field-group {
+      margin-bottom: 12px;
+    }
+    
+    .field-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: #6c757d;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .field-group input,
+    .field-group textarea,
+    .field-group select {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      font-size: 14px;
+      box-sizing: border-box;
+      transition: border-color 0.2s;
+    }
+    
+    .field-group input:focus,
+    .field-group textarea:focus,
+    .field-group select:focus {
+      outline: none;
+      border-color: #0073b1;
+      box-shadow: 0 0 0 2px rgba(0, 115, 177, 0.1);
+    }
+    
+    .field-group textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+    
+    .readonly-field {
+      background: #f8f9fa;
+      color: #495057;
+      font-weight: 500;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    
+    .btn {
+      flex: 1;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+    
+    .btn-primary {
+      background: #0073b1;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #005885;
+    }
+    
+    .btn-secondary {
+      background: #6c757d;
+      color: white;
+    }
+    
+    .btn-secondary:hover {
+      background: #5a6268;
+    }
+    
+    .btn-success {
+      background: #28a745;
+      color: white;
+    }
+    
+    .btn-success:hover {
+      background: #218838;
+    }
+    
+    .btn:disabled {
+      background: #e9ecef;
+      color: #6c757d;
+      cursor: not-allowed;
+    }
+    
+    .toggle-group {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    
+    .toggle-label {
+      font-size: 14px;
+      color: #495057;
+    }
+    
+    .toggle-switch {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      background: #ced4da;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    .toggle-switch.active {
+      background: #0073b1;
+    }
+    
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+    
+    .toggle-switch.active::after {
+      transform: translateX(20px);
+    }
+    
+    .status {
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      text-align: center;
+      margin-top: 12px;
+    }
+    
+    .status.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    
+    .status.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    
+    .status.info {
+      background: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+    }
+    
+    .privacy-text {
+      font-size: 12px;
+      line-height: 1.5;
+      color: #6c757d;
+      background: #f8f9fa;
+      padding: 12px;
+      border-radius: 4px;
+      border-left: 3px solid #0073b1;
+    }
+    
+    .selected-role-pill {
+      background: #e3f2fd;
+      color: #1976d2;
+      padding: 6px 12px;
+      border-radius: 16px;
+      font-size: 12px;
+      font-weight: 500;
+      margin: 8px 0;
+      display: inline-block;
+    }
+    
+    .more-menu {
+      position: relative;
+      display: inline-block;
+    }
+    
+    .more-btn {
+      background: none;
+      border: none;
+      font-size: 18px;
+      cursor: pointer;
+      padding: 4px;
+      color: #6c757d;
+    }
+    
+    .more-dropdown {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      background: white;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
+      min-width: 150px;
+      display: none;
+    }
+    
+    .more-dropdown.show {
+      display: block;
+    }
+    
+    .more-dropdown a {
+      display: block;
+      padding: 8px 12px;
+      text-decoration: none;
+      color: #333;
+      font-size: 14px;
+    }
+    
+    .more-dropdown a:hover {
+      background: #f8f9fa;
+    }
+    
+    .hidden {
+      display: none;
+    }
+    
+    .loader {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid #0073b1;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 8px;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    /* Modal styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    
+    .modal {
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+      max-width: 400px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    
+    .modal h3 {
+      margin: 0 0 16px 0;
+      color: #495057;
+    }
+    
+    .role-option {
+      display: flex;
+      align-items: flex-start;
+      padding: 12px;
+      border: 1px solid #e9ecef;
+      border-radius: 4px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .role-option:hover {
+      border-color: #0073b1;
+      background: #f8f9fa;
+    }
+    
+    .role-option.selected {
+      border-color: #0073b1;
+      background: #e3f2fd;
+    }
+    
+    .role-radio {
+      margin-right: 12px;
+      margin-top: 2px;
+    }
+    
+    .role-content {
+      flex: 1;
+    }
+    
+    .role-title {
+      font-weight: 600;
+      color: #495057;
+      margin-bottom: 4px;
+    }
+    
+    .role-company {
+      color: #6c757d;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+    
+    .role-dates {
+      color: #6c757d;
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+    
+    .role-score {
+      background: #28a745;
+      color: white;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 500;
+    }
+    
+    .ai-explanation {
+      font-size: 11px;
+      color: #6c757d;
+      font-style: italic;
+      margin-top: 4px;
+    }
+    
+    .show-all-btn {
+      background: none;
+      border: none;
+      color: #0073b1;
+      text-decoration: underline;
+      cursor: pointer;
+      font-size: 14px;
+      margin-top: 8px;
+    }
+    
+    .modal-buttons {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    
+    .tab-nav {
+      display: flex;
+      border-bottom: 1px solid #dee2e6;
+      margin-bottom: 20px;
+    }
+    
+    .tab-nav button {
+      background: none;
+      border: none;
+      padding: 12px 16px;
+      cursor: pointer;
+      color: #6c757d;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    
+    .tab-nav button.active {
+      color: #0073b1;
+      border-bottom-color: #0073b1;
+    }
+    
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>LinkLog</h1>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="tab-nav">
+      <button id="captureTab" class="active">Capture</button>
+      <button id="settingsTab">Settings</button>
+      <button id="privacyTab">Privacy</button>
+    </div>
+
+    <!-- Capture Tab -->
+    <div id="captureContent" class="tab-content active">
+      <!-- Capture Section -->
+      <div class="section">
+        <h2>Capture Profile</h2>
+        
+        <div class="field-group">
+          <label>Role Keyword (Optional)</label>
+          <input type="text" id="keywordField" placeholder="e.g., 'investment banking analyst'">
+        </div>
+        
+        <div class="button-group">
+          <button id="captureBtn" class="btn btn-primary">Capture</button>
+          <div class="more-menu">
+            <button id="moreBtn" class="more-btn">⋯</button>
+            <div id="moreDropdown" class="more-dropdown">
+              <a href="#" id="exportCsvBtn">Export CSV</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Profile Data Section -->
+      <div id="profileSection" class="section hidden">
+        <h2>Profile Data</h2>
+        
+        <div class="field-group">
+          <label>Name</label>
+          <input type="text" id="nameField" class="readonly-field" readonly>
+        </div>
+        
+        <div class="field-group">
+          <label>Title (Headline)</label>
+          <input type="text" id="titleField" class="readonly-field" readonly>
+        </div>
+        
+        <div class="field-group">
+          <label>Company (Guess)</label>
+          <input type="text" id="companyField" class="readonly-field" readonly>
+        </div>
+        
+        <div class="field-group">
+          <label>Profile URL</label>
+          <input type="text" id="profileUrlField" class="readonly-field" readonly>
+        </div>
+        
+        <div class="field-group">
+          <label>Status</label>
+          <input type="text" id="statusField" class="readonly-field" readonly>
+        </div>
+      </div>
+
+      <!-- Selected Role Section -->
+      <div id="selectedRoleSection" class="section hidden">
+        <h2>Selected Role</h2>
+        <div id="selectedRolePill" class="selected-role-pill hidden"></div>
+      </div>
+
+      <!-- Details Section -->
+      <div id="detailsSection" class="section hidden">
+        <h2>Details</h2>
+        
+        <div class="field-group">
+          <label>Tag</label>
+          <select id="tagField">
+            <option value="">Select a tag...</option>
+            <option value="IB">IB (Investment Banking)</option>
+            <option value="Consulting">Consulting</option>
+            <option value="PM">PM (Product Management)</option>
+            <option value="Tech">Tech</option>
+            <option value="Finance">Finance</option>
+            <option value="Marketing">Marketing</option>
+            <option value="Sales">Sales</option>
+            <option value="Alumni">Alumni</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        
+        <div class="field-group">
+          <label>Notes</label>
+          <textarea id="notesField" placeholder="Add any notes or context..."></textarea>
+        </div>
+        
+        <div class="field-group">
+          <label>Follow-up Date</label>
+          <input type="date" id="followUpField">
+        </div>
+        
+        <div class="button-group">
+          <button id="saveBtn" class="btn btn-success" disabled>Save to Sheet</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings Tab -->
+    <div id="settingsContent" class="tab-content">
+      <div class="section">
+        <h2>Google Apps Script</h2>
+        
+        <div class="field-group">
+          <label>Apps Script URL</label>
+          <input type="url" id="appsScriptUrlField" placeholder="https://script.google.com/macros/s/...">
+        </div>
+        
+        <div class="field-group">
+          <label>Authorization Token</label>
+          <input type="password" id="tokenField" placeholder="Bearer token for authentication">
+        </div>
+        
+        <div class="button-group">
+          <button id="testAppsScriptBtn" class="btn btn-secondary">Test Apps Script</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>OpenAI Settings</h2>
+        
+        <div class="field-group">
+          <label>API Key</label>
+          <input type="password" id="openaiApiKeyField" placeholder="Your OpenAI API key">
+        </div>
+        
+        <div class="field-group">
+          <label>Model</label>
+          <input type="text" id="openaiModelField" value="gpt-3.5-turbo" placeholder="Model name">
+        </div>
+        
+        <div class="toggle-group">
+          <span class="toggle-label">Use AI re-rank</span>
+          <div id="aiRerankToggle" class="toggle-switch"></div>
+        </div>
+        
+        <div class="toggle-group">
+          <span class="toggle-label">Use AI auto-tag</span>
+          <div id="aiAutoTagToggle" class="toggle-switch"></div>
+        </div>
+        
+        <div class="toggle-group">
+          <span class="toggle-label">Use AI follow-up suggestions</span>
+          <div id="aiFollowUpToggle" class="toggle-switch"></div>
+        </div>
+        
+        <div class="toggle-group">
+          <span class="toggle-label">Demo/Mock AI mode</span>
+          <div id="demoAIToggle" class="toggle-switch"></div>
+        </div>
+        
+        <div class="button-group">
+          <button id="testOpenAIBtn" class="btn btn-secondary">Test OpenAI</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Other Settings</h2>
+        
+        <div class="toggle-group">
+          <span class="toggle-label">Capture on Connect (with confirm)</span>
+          <div id="captureOnConnectToggle" class="toggle-switch"></div>
+        </div>
+        
+        <div class="button-group">
+          <button id="saveSettingsBtn" class="btn btn-primary">Save Settings</button>
+          <button id="cancelSettingsBtn" class="btn btn-secondary">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Privacy Tab -->
+    <div id="privacyContent" class="tab-content">
+      <div class="section">
+        <h2>Privacy & Data</h2>
+        <div class="privacy-text">
+          <strong>Privacy-First Design:</strong><br>
+          • <strong>User-triggered only:</strong> No automatic scraping, timers, or background crawling<br>
+          • <strong>Visible confirmation:</strong> All data is shown to you before saving<br>
+          • <strong>Minimal data:</strong> Only captures what you can see on the LinkedIn page<br>
+          • <strong>Local storage:</strong> Settings and offline queue stored locally in your browser<br>
+          • <strong>Opt-in AI:</strong> AI features are disabled by default and require your permission<br>
+          • <strong>No tracking:</strong> We don't collect or track your browsing activity<br>
+          • <strong>Your data:</strong> All captured data goes directly to your Google Sheet<br>
+          • <strong>API key security:</strong> Your OpenAI API key is stored only in chrome.storage.sync<br>
+          • <strong>AI data:</strong> Data is sent to OpenAI only when AI toggles are enabled
+        </div>
+      </div>
+    </div>
+
+    <!-- Status Messages -->
+    <div id="statusMessage" class="status hidden"></div>
+  </div>
+
+  <!-- Role Selection Modal -->
+  <div id="roleSelectModal" class="modal-overlay hidden">
+    <div class="modal">
+      <h3>Select Role to Save</h3>
+      <div id="roleOptions"></div>
+      <div class="modal-buttons">
+        <button id="cancelRoleBtn" class="btn btn-secondary">Cancel</button>
+        <button id="confirmRoleBtn" class="btn btn-primary">Use this role</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "LinkLog",
+  "version": "0.1.0",
+  "description": "Privacy-first LinkedIn networking outreach logger with AI role selection",
+  "action": { 
+    "default_popup": "popup.html" 
+  },
+  "icons": { 
+    "128": "icons/icon128.png" 
+  },
+  "permissions": [
+    "activeTab", 
+    "storage", 
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://*.linkedin.com/*"
+  ],
+  "background": { 
+    "service_worker": "service_worker.js" 
+  },
+  "content_scripts": [
+    { 
+      "matches": ["https://*.linkedin.com/*"], 
+      "js": ["content.js"], 
+      "run_at": "document_idle" 
+    }
+  ]
+}
